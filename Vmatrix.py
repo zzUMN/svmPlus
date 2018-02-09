@@ -7,6 +7,7 @@ import numpy as np
 from scipy import misc
 import tensorflow as tf
 import h5py
+from scipy.stats import norm
 
 class Vmatrix(object):
     def __init__(self, kernel, c):
@@ -15,6 +16,29 @@ class Vmatrix(object):
 
     def calculateEle(self, X, y, mode):
         n_samples, n_features = X.shape
-        if mode == 1:
+        V = np.ones((n_samples,n_samples))
+        if mode == 1: # the data belonged to a upper-bounded support (-inf, B]
             theta = 1
-            dMu = 
+            for i in range(n_samples):
+                for j in range(n_samples):
+                    for k in range(n_features):
+                        V[i, j] = V[i, j] * (np.amax(X) - np.amax(X[i, k],X[j, k]))
+
+        else:
+            if mode == 2: # Mu can be estimated according to the training data
+                theta = 1
+                for i in range(n_samples):
+                    for j in range(n_samples):
+                        for k in range(n_features):
+                            freq = np.where(np.logical_and(X[:, k] > np.amax(X[i, k], X[j, k])))
+                            freqNum = freq.shape
+                            V[i, j] = V[i, j]*(freqNum[1]/n_samples)
+
+            else:
+                
+
+
+
+        return V, theta
+
+

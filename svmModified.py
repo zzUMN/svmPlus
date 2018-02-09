@@ -15,7 +15,8 @@ class SVMTrainer(object):
         """Given the training features X with labels y, returns a SVM
         predictor representing the trained SVM.
         """
-        lagrange_multipliers = self._compute_multipliers(X, y)
+        mode = 1
+        lagrange_multipliers = self._compute_multipliers(X, y,mode)
         return self._construct_predictor(X, y, lagrange_multipliers)
 
     def _gram_matrix(self, X):
@@ -55,7 +56,7 @@ class SVMTrainer(object):
             support_vectors=support_vectors,
             support_vector_labels=support_vector_labels)
 
-    def _compute_multipliers(self, X, y):
+    def _compute_multipliers(self, X, y, mode):
         n_samples, n_features = X.shape
 
         K = self._gram_matrix(X)
@@ -64,21 +65,40 @@ class SVMTrainer(object):
         # s.t.
         #  Gx \coneleq h
         #  Ax = b
-
-        P = cvxopt.matrix(np.outer(y, y) * K)
-        q = cvxopt.matrix(-1 * np.ones(n_samples))
+        if mode == 1:
+            P = cvxopt.matrix(np.outer(y, y) * K)
+            q = cvxopt.matrix(-1 * np.ones(n_samples))
 
         # -a_i \leq 0
         # TODO(tulloch) - modify G, h so that we have a soft-margin classifier
-        G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
-        h_std = cvxopt.matrix(np.zeros(n_samples))
+            G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
+            h_std = cvxopt.matrix(np.zeros(n_samples))
 
         # a_i \leq c
-        G_slack = cvxopt.matrix(np.diag(np.ones(n_samples)))
-        h_slack = cvxopt.matrix(np.ones(n_samples) * self._c)
+            G_slack = cvxopt.matrix(np.diag(np.ones(n_samples)))
+            h_slack = cvxopt.matrix(np.ones(n_samples) * self._c)
 
-        G = cvxopt.matrix(np.vstack((G_std, G_slack)))
-        h = cvxopt.matrix(np.vstack((h_std, h_slack)))
+            G = cvxopt.matrix(np.vstack((G_std, G_slack)))
+            h = cvxopt.matrix(np.vstack((h_std, h_slack)))
+        else:
+            if mode == 2:
+                P = cvxopt.matrix(np.outer(y, y) * K) + cvxopt.matrix(np.diag(np.ones(n_samples)*(1/(4*self._c))))
+                q = cvxopt.matrix(-1 * np.ones(n_samples))
+
+                # -a_i \leq 0
+                # TODO(tulloch) - modify G, h so that we have a soft-margin L2 classifier
+                G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
+                h_std = cvxopt.matrix(np.zeros(n_samples))
+
+                # a_i \leq c
+                #G_slack = cvxopt.matrix(np.diag(np.ones(n_samples)))
+                #h_slack = cvxopt.matrix(np.ones(n_samples) * self._c)
+
+                G = G_std
+                h = h_std
+
+            else:
+
 
         A = cvxopt.matrix(y, (1, n_samples))
         b = cvxopt.matrix(0.0)
