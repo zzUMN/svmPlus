@@ -1,9 +1,10 @@
 import numpy as np
 import cvxopt.solvers
 import logging
+from kernel import Kernel
+from Vmatrix import Vmatrix
 
-
-MIN_SUPPORT_VECTOR_MULTIPLIER = 1e-5
+MIN_SUPPORT_VECTOR_MULTIPLIER = 1e-7
 
 
 class SVMTrainer(object):
@@ -11,11 +12,11 @@ class SVMTrainer(object):
         self._kernel = kernel
         self._c = c
 
-    def train(self, X, y):
+    def train(self, X, y, mode):
         """Given the training features X with labels y, returns a SVM
         predictor representing the trained SVM.
         """
-        mode = 1
+        #mode = 1
         lagrange_multipliers = self._compute_multipliers(X, y,mode)
         return self._construct_predictor(X, y, lagrange_multipliers)
 
@@ -70,7 +71,7 @@ class SVMTrainer(object):
             q = cvxopt.matrix(-1 * np.ones(n_samples))
 
         # -a_i \leq 0
-        # TODO(tulloch) - modify G, h so that we have a soft-margin classifier
+        # TODO(tulloch) - modify G, h so that we have a soft-margin L1 classifier
             G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
             h_std = cvxopt.matrix(np.zeros(n_samples))
 
@@ -80,6 +81,9 @@ class SVMTrainer(object):
 
             G = cvxopt.matrix(np.vstack((G_std, G_slack)))
             h = cvxopt.matrix(np.vstack((h_std, h_slack)))
+
+            A = cvxopt.matrix(y.astype('d'), (1, n_samples))
+            b = cvxopt.matrix(0.0)
         else:
             if mode == 2:
                 P = cvxopt.matrix(np.outer(y, y) * K) + cvxopt.matrix(np.diag(np.ones(n_samples)*(1/(4*self._c))))
@@ -96,15 +100,42 @@ class SVMTrainer(object):
 
                 G = G_std
                 h = h_std
+                A = cvxopt.matrix(y.astype('d'), (1, n_samples))
+                b = cvxopt.matrix(0.0)
 
             else:
+                vc = Vmatrix(self._kernel,self._c)
+                V, theta = vc.calculateEle(X,y,mode=1)
+                V = cvxopt.matrix(V)
 
+                proY = 0.0
+                for i in range(n_samples):
+                    if y[i] == 1:
+                        proY = proY+1
 
-        A = cvxopt.matrix(y, (1, n_samples))
-        b = cvxopt.matrix(0.0)
+                P = (V+cvxopt.matrix(self._c*np.linalg.pinv(K)))
+                q = cvxopt.matrix(np.transpose(np.transpose(V*y)))
 
+                G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
+                h_std = cvxopt.matrix(np.zeros(n_samples))
+
+                #a_i \leq c
+                G_slack = cvxopt.matrix(np.diag(np.ones(n_samples)))
+                h_slack = cvxopt.matrix(np.ones(n_samples) )
+
+                G = cvxopt.matrix(np.vstack((G_std, G_slack)))
+                h = cvxopt.matrix(np.vstack((h_std, h_slack)))
+
+                A = cvxopt.matrix(y.astype('d'), (1, n_samples))
+                b = cvxopt.matrix(proY)
+        print(P.size)
+        print(q.size)
+        print(G.size)
+        print(h.size)
+        print(A.size)
+        print(b.size)
         solution = cvxopt.solvers.qp(P, q, G, h, A, b)
-
+        print(solution)
         # Lagrange multipliers
         return np.ravel(solution['x'])
 
