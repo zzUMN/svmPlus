@@ -20,14 +20,14 @@ class Vmatrix(object):
 
         if mode == 1: # the data belonged to a upper-bounded support (-inf, B]
             theta = 1
-            for i in xrange(100):
-                for j in xrange(100):
-                    for k in xrange(2):
+            for i in xrange(n_samples):
+                for j in xrange(n_samples):
+                    for k in xrange(n_features):
                         if X[i, k] > X[j, k]:
                             maxTemp = X[i, k]
                         else:
                             maxTemp = X[j, k]
-                        V[i, j] = V[i, j]* (np.amax(X) - maxTemp )
+                        V[i, j] = V[i, j]* (np.amax(X) - maxTemp)
 
         else:
             if mode == 2: # Mu can be estimated according to the training data
@@ -35,17 +35,52 @@ class Vmatrix(object):
                 for i in range(n_samples):
                     for j in range(n_samples):
                         for k in range(n_features):
-                            freq = np.where(np.logical_and(X[:, k] > np.amax(X[i, k], X[j, k])))
-                            freqNum = freq.shape
+                            freq = np.where((X[:, k] > np.maximum(X[i, k], X[j, k])))
+                            freq = np.asarray(freq)
+                            freqNum =(freq.shape)
+                            if freqNum[1]==0:
+                                V[i,j] = 0
+                                break
+
                             V[i, j] = V[i, j]*(freqNum[1]/n_samples)
 
-            '''else:
-                theta = 
+            else: # mode 3 is the general and stable edition
+                X_new = X
+                for t in range (n_samples):
+                    if(y[t]==0):
+                        X_new[t, :] = 0
+
                 for i in range(n_samples):
                     for j in range(n_samples):
                         for k in range(n_features):
-                            if X[]'''
+                            y_pos = sum(y)# y = {0,1}
 
+                            freq = np.where(((X_new[:, k]) > np.maximum(X[i, k], X[j, k])))
+                            freq = np.asarray(freq)
+                            freqNum = (freq.shape)
+                            F_star = freqNum[1]/y_pos
+                            theta = 1/(F_star*(1-F_star)+0.00001)
+
+                            freq_to = np.where((X[:, k] > np.maximum(X[i, k], X[j, k])))
+                            freq_to = np.asarray(freq_to)
+                            freqNum_to = (freq_to.shape)
+                            mu = freqNum_to[1]/n_samples
+
+                            V[i, j] = V[i, j] * mu * theta
+
+        # double check the Vmatrix to avoid the ill-condition
+        for i in range(n_samples):
+            max_temp = V[i,i]
+            if (np.amax(V[:,i]) > max_temp) | (np.amax(V[i,:]) > max_temp):
+                V[i, :] = 0
+                V[:, i] = 0
+                V[i. i] = max_temp
+
+
+        c_V = np.linalg.cond(V)
+        #c_V = np.linalg.norm(V)*np.linalg.norm(np.linalg.pinv(V))
+        print('Vmatrix condition number is :' +str(c_V))
+        #print(c_V)
         return V, theta
 
 

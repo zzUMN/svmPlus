@@ -21,14 +21,14 @@ y_min, y_max = samples[:,1].min()-1, samples[:,1].max()+1
 labels = 2*(samples.sum(axis=1)>0)-1
 c = [0.00001, 0.0001, 0.001, 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
 para_select = len(c)
-for mode in range(1,4):
+for mode in range(3,4):
     error_select = np.inf
     c_select = np.inf
     for s in range(para_select):
         trainer_temp = SVMTrainer(Kernel.linear(), c[s])
 
         splitM = Split()
-        samples_train, samples_valid, labels_train, labels_valid, size_valid, size_training = splitM.K_fold(samples, labels, 5)
+        samples_train, samples_valid, labels_train, labels_valid, size_valid, size_training = splitM.K_fold(samples, labels, 5, 1)
 
         predictor_temp = trainer_temp.train(samples_train, labels_train, mode=mode)
         grid_size = 20
@@ -76,3 +76,4 @@ for mode in range(1,4):
     plt.ylim(y_min, y_max)
     filename = "svmtest"+str(mode)+".pdf"
     plt.savefig(filename)
+    plt.close()

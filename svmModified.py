@@ -104,18 +104,20 @@ class SVMTrainer(object):
                 b = cvxopt.matrix(0.0)
 
             else:
-                vc = Vmatrix(self._kernel,self._c)
-                V, theta = vc.calculateEle(X,y,mode=1)
-                V = cvxopt.matrix(V)
+                A = cvxopt.matrix(y.astype('d'), (1, n_samples))
 
+                vc = Vmatrix(self._kernel,self._c)
+                V, theta = vc.calculateEle(X,y,mode=3)
+                V = V.T
+                V = cvxopt.matrix(V)
+                y = cvxopt.matrix(y)
                 proY = 0.0
                 for i in range(n_samples):
                     if y[i] == 1:
                         proY = proY+1
 
-                P = (V+cvxopt.matrix(self._c*np.linalg.pinv(K)))
-                q = cvxopt.matrix(np.transpose(np.transpose(V*y)))
-
+                P = (V+cvxopt.matrix(self._c*np.linalg.pinv(K).T))
+                q = cvxopt.matrix(y.T*V(-1))# the 1 term componet??
                 G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
                 h_std = cvxopt.matrix(np.zeros(n_samples))
 
@@ -126,16 +128,17 @@ class SVMTrainer(object):
                 G = cvxopt.matrix(np.vstack((G_std, G_slack)))
                 h = cvxopt.matrix(np.vstack((h_std, h_slack)))
 
-                A = cvxopt.matrix(y.astype('d'), (1, n_samples))
                 b = cvxopt.matrix(proY)
+        '''
         print(P.size)
         print(q.size)
         print(G.size)
         print(h.size)
         print(A.size)
         print(b.size)
+        '''
         solution = cvxopt.solvers.qp(P, q, G, h, A, b)
-        print(solution)
+        #print(solution)
         # Lagrange multipliers
         return np.ravel(solution['x'])
 
@@ -169,3 +172,23 @@ class SVMPredictor(object):
                                  self._support_vector_labels):
             result += z_i * y_i * self._kernel(x_i, x)
         return np.sign(result).item()
+
+    def score(self, X, y):
+        n_samples, n_features = X.shape
+
+        result_predict = []
+        error = 0
+        for i in range(n_samples):
+            point = X[i, :]
+            point_predict = self.predict(point)
+            result_predict.append(point_predict)
+            if point_predict == y[i]:
+                error = error+0
+
+            else:
+                error = error + 1
+
+        error = float((n_samples-error)/n_samples)
+
+        return error
+
