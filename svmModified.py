@@ -3,7 +3,10 @@ import cvxopt.solvers
 import logging
 from kernel import Kernel
 from Vmatrix import Vmatrix
-
+import matplotlib as mp
+mp.use('TkAgg')
+import matplotlib.pyplot as plt
+import seaborn as sns
 MIN_SUPPORT_VECTOR_MULTIPLIER = 1e-7
 
 
@@ -36,7 +39,8 @@ class SVMTrainer(object):
         support_multipliers = lagrange_multipliers[support_vector_indices]
         support_vectors = X[support_vector_indices]
         support_vector_labels = y[support_vector_indices]
-
+        print('support vector number is: ')
+        print(support_multipliers.shape)
         # http://www.cs.cmu.edu/~guestrin/Class/10701-S07/Slides/kernels.pdf
         # bias = y_k - \sum z_i y_i  K(x_k, x_i)
         # Thus we can just predict an example with bias of zero, and
@@ -107,8 +111,11 @@ class SVMTrainer(object):
                 A = cvxopt.matrix(y.astype('d'), (1, n_samples))
 
                 vc = Vmatrix(self._kernel,self._c)
-                V, theta = vc.calculateEle(X,y,mode=3)
-                V = V.T
+                V, theta = vc.calculateEle(X,y,mode=1)
+                y_T = np.transpose(y)
+                q = -1*np.matmul(y_T,V)
+                q = q.astype('d')
+                q = np.transpose(q)
                 V = cvxopt.matrix(V)
                 y = cvxopt.matrix(y)
                 proY = 0.0
@@ -116,8 +123,8 @@ class SVMTrainer(object):
                     if y[i] == 1:
                         proY = proY+1
 
-                P = (V+cvxopt.matrix(self._c*np.linalg.pinv(K).T))
-                q = cvxopt.matrix(y.T*V(-1))# the 1 term componet??
+                P = (V+cvxopt.matrix(self._c*(np.transpose(np.linalg.pinv(K)))))
+                q = cvxopt.matrix(q)# the 1 term componet??
                 G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
                 h_std = cvxopt.matrix(np.zeros(n_samples))
 
@@ -128,7 +135,7 @@ class SVMTrainer(object):
                 G = cvxopt.matrix(np.vstack((G_std, G_slack)))
                 h = cvxopt.matrix(np.vstack((h_std, h_slack)))
 
-                b = cvxopt.matrix(proY)
+                b = cvxopt.matrix(proY/(n_samples*0.5))# Porb ???(/n_samples)
         '''
         print(P.size)
         print(q.size)
@@ -171,6 +178,9 @@ class SVMPredictor(object):
                                  self._support_vectors,
                                  self._support_vector_labels):
             result += z_i * y_i * self._kernel(x_i, x)
+            #print('The output result is: ')
+            #print(np.sign(result).item())
+
         return np.sign(result).item()
 
     def score(self, X, y):
@@ -191,4 +201,90 @@ class SVMPredictor(object):
         error = float((n_samples-error)/n_samples)
 
         return error
+    def display_Density(self,X,y,namefile):
 
+        n_samples, n_features = X.shape
+        result1_predict = []
+        result2_predict = []
+        label1_predict = []
+        label2_predict = []
+        for i in range(n_samples):
+            point = X[i, :]
+            result = self._bias
+            for z_i, x_i, y_i in zip(self._weights,
+                                     self._support_vectors,
+                                     self._support_vector_labels):
+                result += z_i * y_i * self._kernel(x_i, point)
+            group_predict = self.predict(point)
+            if y[i]>0:
+                result1_predict.append(result)
+                label1_predict.append(group_predict)
+            else:
+                result2_predict.append(result)
+                label2_predict.append(group_predict)
+
+        for j in range(2):
+            if j == 0:
+                sns.distplot(result1_predict, hist=False, kde=True, kde_kws={'shade': True, 'linewidth':3},label=1)
+            else:
+                sns.distplot(result2_predict, hist=False, kde=True, kde_kws={'shade': True, 'linewidth':3},label=2)
+
+        plt.show()
+        #plt.savefig(namefile)
+
+
+    def subgroup_monitor(self,X,y,sub_group,overlap,mode):
+        n_samples, n_features = X.shape
+        result1_predict = []
+        result2_predict = []
+        label1_predict = []
+        label2_predict = []
+        result1_Overlap = []
+        labelOverlap1_predict = []
+        result2_Overlap = []
+        labelOverlap2_predict = []
+
+        for i in range(n_samples):
+            point = X[i, :]
+            group_predict = self.predict(point)
+            result = self._bias
+            for z_i, x_i, y_i in zip(self._weights,
+                                     self._support_vectors,
+                                     self._support_vector_labels):
+                result += z_i * y_i * self._kernel(x_i, point)
+            if y[i]>0:
+                result1_predict.append(result)
+                label1_predict.append(group_predict)
+            else:
+                result2_predict.append(result)
+                label2_predict.append(group_predict)
+
+            if sub_group[i] == overlap:
+
+                if y[i]>0:
+                    result1_Overlap.append(result)
+                    labelOverlap1_predict.append(group_predict)
+                else:
+                    result2_Overlap.append(result)
+                    labelOverlap2_predict.append(group_predict)
+
+        if mode ==0:
+            for j in range(2):
+                if j == 0:
+                    sns.distplot(result1_predict, hist=False, kde=True, kde_kws={'shade': True, 'linewidth':3}, norm_hist=True, label=1)
+                else:
+                    sns.distplot(result2_predict, hist=False, kde=True, kde_kws={'shade': True, 'linewidth':3}, norm_hist=True, label=2)
+            plt.show()
+
+        else:
+            for j in range(2):
+                if j == 0:
+                    sns.distplot(result1_Overlap, hist=False, kde=True, kde_kws={'shade': True, 'linewidth':3}, norm_hist=True,label=1)
+                else:
+                    sns.distplot(result2_Overlap, hist=False, kde=True, kde_kws={'shade': True, 'linewidth':3}, norm_hist=True, label=2)
+
+        # calculate the percentage of the overlap digits in each class
+            overlap_perc1 = float(len(result1_Overlap))/float(len(result1_predict))
+            overlap_perc2 = float(len(result2_Overlap))/float(len(result2_predict))
+            plt.title("the ovelap Prob in class1: "+str(overlap_perc1)+" and the ovelap Prob in class2: "+str(overlap_perc2))
+            plt.show()

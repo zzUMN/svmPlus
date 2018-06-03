@@ -8,8 +8,8 @@ from scipy import misc
 import tensorflow as tf
 import h5py
 
-from keras.datasets import mnist
-from keras.utils import np_utils
+#from keras.datasets import mnist
+#from keras.utils import np_utils
 
 import matplotlib.pyplot as plt
 
@@ -67,7 +67,7 @@ class synthGroup(object):
                                 dtype=np.float32)
         num_labels = len(labels)
         digit_indices= np.random.randint(0,num_labels, num_samples)
-
+        sub_label = np.ndarray(shape=(num_samples,1),dtype=np.float32)
         num_digits = []
         for i in range(num_samples):
 
@@ -79,7 +79,7 @@ class synthGroup(object):
             synth_indice = self.seperate_digits(X_train, y_train, labels ,label_temp)
             synth_data[j, :, :] = X_train[synth_indice, :, :]
             synth_labels.append(c)
-
-        return synth_data, synth_labels
+            sub_label[j] = y_train[synth_indice]
+        return synth_data, synth_labels, sub_label
 
 
