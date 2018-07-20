@@ -8,7 +8,7 @@ mp.use('TkAgg')
 import matplotlib.pyplot as plt
 import seaborn as sns
 MIN_SUPPORT_VECTOR_MULTIPLIER = 1e-7
-
+EPSILON_A = 1e-6
 
 class SVMTrainer(object):
     def __init__(self, kernel, c):
@@ -111,7 +111,7 @@ class SVMTrainer(object):
                 A = cvxopt.matrix(y.astype('d'), (1, n_samples))
 
                 vc = Vmatrix(self._kernel,self._c)
-                V, theta = vc.calculateEle(X,y,mode=1)
+                V, theta = vc.calculateEle(X,y,mode=3)
                 y_T = np.transpose(y)
                 q = -1*np.matmul(y_T,V)
                 q = q.astype('d')
@@ -123,19 +123,23 @@ class SVMTrainer(object):
                     if y[i] == 1:
                         proY = proY+1
 
-                P = (V+cvxopt.matrix(self._c*(np.transpose(np.linalg.pinv(K)))))
+                P = (V+cvxopt.matrix((EPSILON_A+self._c)*np.identity(n_samples)))#+self._c*(np.transpose(np.linalg.pinv(K)))))
                 q = cvxopt.matrix(q)# the 1 term componet??
                 G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
                 h_std = cvxopt.matrix(np.zeros(n_samples))
 
                 #a_i \leq c
                 G_slack = cvxopt.matrix(np.diag(np.ones(n_samples)))
-                h_slack = cvxopt.matrix(np.ones(n_samples) )
+                h_slack = cvxopt.matrix(np.ones(n_samples)*1.1)
 
                 G = cvxopt.matrix(np.vstack((G_std, G_slack)))
                 h = cvxopt.matrix(np.vstack((h_std, h_slack)))
 
-                b = cvxopt.matrix(proY/(n_samples*0.5))# Porb ???(/n_samples)
+                b = cvxopt.matrix(proY)#/(n_samples))# Porb ???(/n_samples)
+        '''print('Rank A:')
+        print(np.linalg.matrix_rank(A))
+        print('Rank [P;A;G]')
+        print(np.linalg.matrix_rank(np.concatenate((P,A,G))))'''
         '''
         print(P.size)
         print(q.size)
@@ -182,6 +186,15 @@ class SVMPredictor(object):
             #print(np.sign(result).item())
 
         return np.sign(result).item()
+
+    def gen_conditional_prob(self, x):
+        result = self._bias
+        for z_i, x_i, y_i in zip(self._weights,
+                                 self._support_vectors,
+                                 self._support_vector_labels):
+            result += z_i * y_i * self._kernel(x_i, x)
+
+        return result
 
     def score(self, X, y):
         n_samples, n_features = X.shape

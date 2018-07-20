@@ -100,7 +100,7 @@ test_features = (test_features-np.min(test_features))/(np.max(test_features)-np.
 # experiment comparison
 c = [0.000001,0.000002,0.000005,0.00001, 0.0001, 0.001, 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
 para_select = len(c)
-for mode in range(2,4):
+for mode in range(3,4):
     '''if mode == 3:
         for n in range(100):
             if train_labels[n]==-1:

@@ -49,26 +49,31 @@ class Vmatrix(object):
                 for t in range (n_samples):
                     if(y[t]==0):
                         X_new[t, :] = 0
-
+                y_pos = 0
+                for iii in range(n_samples):
+                    if y[iii] == 1:
+                        y_pos = y_pos + 1
                 for i in range(n_samples):
                     for j in range(n_samples):
+                        V_ij_temp = 0
                         for k in range(n_features):
-                            y_pos = sum(y)# y = {0,1}
+
+
+                            #y_pos = sum(y)# y = {-1,1}
 
                             freq = np.where(((X_new[:, k]) > np.maximum(X[i, k], X[j, k])))
                             freq = np.asarray(freq)
                             freqNum = (freq.shape)
-                            F_star = freqNum[1]/y_pos
+                            F_star = freqNum[0]/y_pos
                             theta = 1/(F_star*(1-F_star)+0.00001)
 
                             freq_to = np.where((X[:, k] > np.maximum(X[i, k], X[j, k])))
                             freq_to = np.asarray(freq_to)
                             freqNum_to = (freq_to.shape)
-                            mu = freqNum_to[1]/n_samples
+                            mu = freqNum_to[0]/n_samples
 
-                            V[i, j] = V[i, j] * mu * theta
-
-        # double check the Vmatrix to avoid the ill-condition
+                            V[i,j] = V[i,j]*mu * theta
+    # double check the Vmatrix to avoid the ill-condition
         for i in range(n_samples):
             max_temp = V[i,i]
             if (np.amax(V[:,i]) > max_temp) | (np.amax(V[i,:]) > max_temp):
