@@ -108,12 +108,13 @@ class SVMTrainer(object):
                 b = cvxopt.matrix(0.0)
 
             else:
-                A = cvxopt.matrix(y.astype('d'), (1, n_samples))
-
+                #A = cvxopt.matrix(y.astype('d'), (1, n_samples))
+                A = cvxopt.matrix(np.ones((1, n_samples)))
                 vc = Vmatrix(self._kernel,self._c)
-                V, theta = vc.calculateEle(X,y,mode=3)
+                V= vc.calculateEle(X,y,mode=3)
                 y_T = np.transpose(y)
-                q = -1*np.matmul(y_T,V)
+                V_T = np.transpose(V)
+                q = -1*np.matmul(y_T,V_T)
                 q = q.astype('d')
                 q = np.transpose(q)
                 V = cvxopt.matrix(V)
@@ -123,14 +124,14 @@ class SVMTrainer(object):
                     if y[i] == 1:
                         proY = proY+1
 
-                P = (V+cvxopt.matrix((EPSILON_A+self._c)*np.identity(n_samples)))#+self._c*(np.transpose(np.linalg.pinv(K)))))
+                P = (V+cvxopt.matrix((EPSILON_A)*np.identity(n_samples)+self._c*(np.transpose(np.linalg.pinv(K)))))
                 q = cvxopt.matrix(q)# the 1 term componet??
                 G_std = cvxopt.matrix(np.diag(np.ones(n_samples) * -1))
                 h_std = cvxopt.matrix(np.zeros(n_samples))
 
                 #a_i \leq c
                 G_slack = cvxopt.matrix(np.diag(np.ones(n_samples)))
-                h_slack = cvxopt.matrix(np.ones(n_samples)*1.1)
+                h_slack = cvxopt.matrix(np.ones(n_samples)*1)
 
                 G = cvxopt.matrix(np.vstack((G_std, G_slack)))
                 h = cvxopt.matrix(np.vstack((h_std, h_slack)))
@@ -172,27 +173,41 @@ class SVMPredictor(object):
         logging.info("Weights: %s", self._weights)
         logging.info("Support vectors: %s", self._support_vectors)
         logging.info("Support vector labels: %s", self._support_vector_labels)
-
-    def predict(self, x):
+    def predict(self, x, thres=1, mod=1):
         """
         Computes the SVM prediction on the given features x.
         """
+
         result = self._bias
-        for z_i, x_i, y_i in zip(self._weights,
-                                 self._support_vectors,
-                                 self._support_vector_labels):
-            result += z_i * y_i * self._kernel(x_i, x)
+        if mod == 3:
+            for z_i, x_i, y_i in zip(self._weights,
+                                     self._support_vectors,
+                                     self._support_vector_labels):
+                result += z_i * y_i * np.inner(x_i, x)
+        else:
+
+            for z_i, x_i, y_i in zip(self._weights,
+                                     self._support_vectors,
+                                     self._support_vector_labels):
+                result += z_i * y_i * self._kernel(x_i, x)
             #print('The output result is: ')
             #print(np.sign(result).item())
 
-        return np.sign(result).item()
+        return np.sign(result-thres).item()
 
-    def gen_conditional_prob(self, x):
+    def gen_conditional_prob(self, x, mod=1):
         result = self._bias
-        for z_i, x_i, y_i in zip(self._weights,
-                                 self._support_vectors,
-                                 self._support_vector_labels):
-            result += z_i * y_i * self._kernel(x_i, x)
+        if mod == 3:
+            for z_i, x_i, y_i in zip(self._weights,
+                                     self._support_vectors,
+                                     self._support_vector_labels):
+                result += z_i * y_i * np.inner(x_i, x)
+        else:
+
+            for z_i, x_i, y_i in zip(self._weights,
+                                     self._support_vectors,
+                                     self._support_vector_labels):
+                result += z_i * y_i * self._kernel(x_i, x)
 
         return result
 
