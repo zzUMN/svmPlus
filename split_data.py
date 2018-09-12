@@ -10,9 +10,8 @@ class Split(object):
         else :
             training_idx = (numpy.arange(0, num_samples*ratio/(ratio+1)))
             valid_idx = (numpy.arange(num_samples*ratio/(ratio+1), num_samples))
-
         training, valid = X[training_idx, :], X[valid_idx, :]
-        training_labels, valid_labels = y[training_idx, :], y[valid_idx, :]
+        training_labels, valid_labels = y[training_idx], y[valid_idx]
 
         return training, valid, training_labels, valid_labels
 

@@ -61,18 +61,20 @@ class Vmatrix(object):
                             V_ijk_temp = 0
                             for ssN in range(freqNum_to):
                                 X_temp = X[freq_to[0,ssN],k]
-                                freq_temp = np.where(X[:,k]<X_temp)
+                                freq_temp = np.where(X[:,k]>=X_temp)
+
                                 freq_temp = np.asarray(freq_temp)
                                 freqNum_temp = (freq_temp.shape[1])
-                                mu_temp = freqNum_temp/n_samples
-                                freq_reduce_temp = 0
+                                #mu_temp = freqNum_temp/n_samples
+                                mu_temp = float(1.0)/float(n_samples)
+                                freqStar_temp = 0
                                 for tt in range(freqNum_temp):
-                                    if y[freq_temp[0,tt]]==-1:
-                                        freq_reduce_temp = freq_reduce_temp+1
+                                    if y[freq_temp[0, tt]]==1:
+                                        freqStar_temp = freqStar_temp+1
 
-                                freqStar_temp = freqNum_temp - freq_reduce_temp
-                                F_star = freqStar_temp / y_pos
+                                F_star = float(float(freqStar_temp)/float(y_pos))
                                 theta_temp = 1 / (F_star * (1 - F_star) + 0.00001)
+
                                 V_ijk_temp = V_ijk_temp+mu_temp*theta_temp
 
                             V[i,j] = V[i,j]*V_ijk_temp
@@ -82,14 +84,16 @@ class Vmatrix(object):
                 #print("V-matrix:")
                 #print(V)
     # double check the Vmatrix to avoid the ill-condition
-        '''
+
         for i in range(n_samples):
             max_temp = V[i,i]
             if (np.amax(V[:,i]) > max_temp) | (np.amax(V[i,:]) > max_temp):
                 V[i, :] = 0
                 V[:, i] = 0
                 V[i. i] = max_temp
-        '''
+
+        print('V-matrix non zero :')
+        print(np.transpose(np.nonzero(V)))
 
         c_V = np.linalg.cond(V)
         #c_V = np.linalg.norm(V)*np.linalg.norm(np.linalg.pinv(V))

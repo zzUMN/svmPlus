@@ -173,7 +173,7 @@ class SVMPredictor(object):
         logging.info("Weights: %s", self._weights)
         logging.info("Support vectors: %s", self._support_vectors)
         logging.info("Support vector labels: %s", self._support_vector_labels)
-    def predict(self, x, thres=1, mod=1):
+    def predict(self, x, thres=0.29, mod=1):
         """
         Computes the SVM prediction on the given features x.
         """

@@ -11,7 +11,7 @@ from kernel import Kernel
 from Vmatrix import Vmatrix
 from svmModified import SVMPredictor, SVMTrainer
 
-df = pd.read_csv('/home/zzumn/PycharmProjects/svmPlus/svmPlus/svmPlus-master/Pima/pima_indians_diabetes.txt')
+df = pd.read_csv('/home/zzumn/PycharmProjects/svmPlus-master/Pima/pima_indians_diabetes.txt')
 
 #-------------------
 
@@ -32,15 +32,15 @@ X_train, X_test, y_train, y_test = train_test_split(X, y , test_size =0.8,
                                                    random_state = 7)
 
 num_features = X_train.shape[1]# lead the prediction process make sense without knowing any infos from the test dataset
-for i in range(num_features):
+'''for i in range(num_features):
     min_temp = np.min(X_train[:,i])
     max_temp = np.max(X_train[:,i])
     X_train[:,i] = (X_train[:,i]-min_temp)/(max_temp-min_temp)
     X_test[:,i] = 0.99*(X_test[:,i]-min_temp)/(max_temp-min_temp)
-
+'''
 c = [0.000001,0.000002,0.000005,0.00001, 0.0001, 0.001, 0.01, 0.1, 0.2, 0.5, 1, 2, 5, 10, 20, 50, 100]
 para_select = len(c)
-modes = [1,3]
+modes = [3]
 for mode in modes:
     error_select = np.inf
     for s in range(para_select):
@@ -49,8 +49,8 @@ for mode in modes:
         error_temp = []
 
         for f in range(5):
-            X_trainf, X_valid, y_trainf, y_valid = train_test_split(X_train, y_train, test_size=0.8,
-                                                                random_state=7)
+            X_trainf, X_valid, y_trainf, y_valid = train_test_split(X_train, y_train, test_size=1,
+                                                                random_state=7+f)
 
             predictor_temp = trainer_temp.train(X_trainf, y_trainf, mode=mode)
             size_valid = y_valid.shape[0]
