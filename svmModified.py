@@ -35,7 +35,7 @@ class SVMTrainer(object):
     def _construct_predictor(self, X, y, lagrange_multipliers):
         support_vector_indices = \
             lagrange_multipliers > MIN_SUPPORT_VECTOR_MULTIPLIER
-
+        print(y.shape)
         support_multipliers = lagrange_multipliers[support_vector_indices]
         support_vectors = X[support_vector_indices]
         support_vector_labels = y[support_vector_indices]
@@ -183,7 +183,7 @@ class SVMPredictor(object):
             for z_i, x_i, y_i in zip(self._weights,
                                      self._support_vectors,
                                      self._support_vector_labels):
-                result += z_i * y_i * np.inner(x_i, x)
+                result += z_i * y_i * np.kernel(x_i, x)
         else:
 
             for z_i, x_i, y_i in zip(self._weights,
