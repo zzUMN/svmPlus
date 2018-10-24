@@ -7,7 +7,8 @@ import matplotlib as mp
 mp.use('TkAgg')
 import matplotlib.pyplot as plt
 import seaborn as sns
-MIN_SUPPORT_VECTOR_MULTIPLIER = 1e-7
+MIN_SUPPORT_VECTOR_MULTIPLIER = 0.4
+MAX_SUPPORT_VECTOR_MULTIPLIER = 0.6
 EPSILON_A = 1e-6
 
 class SVMTrainer(object):
@@ -33,9 +34,19 @@ class SVMTrainer(object):
         return K
 
     def _construct_predictor(self, X, y, lagrange_multipliers):
-        support_vector_indices = \
-            lagrange_multipliers > MIN_SUPPORT_VECTOR_MULTIPLIER
-        print(y.shape)
+        support_vector_indices1 = \
+            lagrange_multipliers >MIN_SUPPORT_VECTOR_MULTIPLIER
+
+        support_vector_indices2 = lagrange_multipliers < MAX_SUPPORT_VECTOR_MULTIPLIER
+        support_vector_indices = [False]*(len(lagrange_multipliers))
+        for i in range(len(lagrange_multipliers)):
+            if support_vector_indices1[i] & support_vector_indices2[i]:
+                support_vector_indices[i] = True
+
+        #support_vector_indices = np.intersect1d(support_vector_indices1, support_vector_indices2)
+        print(support_vector_indices1)
+        print(support_vector_indices2)
+        print(support_vector_indices)
         support_multipliers = lagrange_multipliers[support_vector_indices]
         support_vectors = X[support_vector_indices]
         support_vector_labels = y[support_vector_indices]

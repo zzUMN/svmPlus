@@ -106,8 +106,8 @@ def plot_contour(X1_train, X2_train, clf):
 
 
     plt.contour(X1,X2,Z, [0.0], colors='k',linewidths=1, origin='lower')
-    plt.contour(X1,X2,Z+1,[0.0],colors='grey',linewidths=1, origin='lower')
-    plt.contour(X1,X2,Z-1,[0.0],colors='grey',linewidths=1, origin='lower')
+    plt.contour(X1,X2,Z+0.1,[0.0],colors='grey',linewidths=1, origin='lower')
+    plt.contour(X1,X2,Z-0.1,[0.0],colors='grey',linewidths=1, origin='lower')
 
     plt.axis("tight")
     plt.show()
@@ -151,7 +151,7 @@ def test_soft():
     X_train, y_train = split_train(X1, y1, X2, y2)
     X_test, y_test = split_test(X1, y1, X2, y2)
     print(y_train.shape)
-    clf = SVMTrainer(Kernel.linear(), c=10)
+    clf = SVMTrainer(Kernel.linear(), c=0.1)
     predictor = clf.train(X_train, y_train,mode=3)
     # y_predict = predictor.predict(X_test[0])
     y_predict = np.zeros(len(X_test))
